@@ -1,0 +1,47 @@
+class CustomNB:
+    def fit(self, X, y):
+        self.X_train = X
+        self.y_train = y
+        
+    # label = which class you want this prob for
+    def prior_prob(self, label): 
+        total = self.y_train.shape[0]
+        class_examples = np.sum(self.y_train == label)
+        return class_examples / float(total)  # python 2
+    
+    # P(Xi=red|y=label) - ith feature (feature col = i) for a single example
+    def conditional_prob(self, feature_col, feature_val, label):
+        # out of all the examples, what mushrooms have feature as feature_val in the feature_col that belongs to that class label
+        X_filtered = self.X_train[self.y_train==label] # all the examples in class label
+        numerator = np.sum(X_filtered[:, feature_col] == feature_val)
+        denominator = len(X_filtered)
+        return numerator / denominator
+    
+    # we are going to do this for all features that we have for each example
+    def predict_point(self, X_test):
+        # X_test is a single example with n features
+        classes = np.unique(self.y_train) # By default from 0
+        n_features = self.X_train.shape[1]
+        post_pro = []
+        # post prob for each class
+        for label in classes:
+            # post_prob = prior * likelihood
+            likehood = 1.0
+            for feature in range(n_features):
+                cond = self.conditional_prob(feature, X_test[feature], label)
+                likehood *= cond
+            prior = self.prior_prob(label)
+            post = prior * likehood
+            post_pro.append(post)
+        
+        # ans = max value from all labels
+        return np.argmax(post_pro) # return the index of the largest value in array
+    
+    def predict(self, X_test):
+        result = []
+        for point in X_test:
+            result.append(self.predict_point(point))
+        return np.array(result)
+    
+    def score(self, X_test, y_test):
+        return (self.predict(X_test) == y_test).mean()
